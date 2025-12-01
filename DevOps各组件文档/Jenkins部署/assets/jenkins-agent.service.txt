@@ -1,0 +1,32 @@
+[Unit]
+Description=Jenkins Agent connect to Jenkins.
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/jenkins
+#
+#The "-secret" is from Jenkins host.
+ExecStart=/usr/bin/java -jar /home/jenkins/agent.jar -url http://192.168.1.114:8080/ -secret 17884108b3f3486005c1bd654d11fd44ad84bd3b04b414de01bbfa67c40ead4b -name "192.168.20.57-LAVA" -webSocket -workDir "/home/jenkins"
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+
+
+
+lavacli identities add --token 3obfmn2gyb0lgzuf6c49870tbotxkh5yk2r03u3f109himyjkii8t8x1hyo2xpzdktni4xs39010zxcs56h20pnfj048b7lpkq8gh6djmshaiolyubjs4j2q3mqgp50z --uri https://localhost/RPC2 --username admin token02
+
+lavacli identities delete token02
+
+lavacli identities list
+
+curl -k https://localhost/RPC2
+
+lavacli -i token02 system version
+
+lavacli -i token02 jobs submit /usr/share/doc/lava-server-doc/html/v2/examples/test-jobs/qemu-amd64-standard-stretch.yaml
+
+

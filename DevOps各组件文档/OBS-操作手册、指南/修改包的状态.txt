@@ -1,0 +1,6 @@
+perl -MStorable -e '
+  my $file = ":packstatus";
+  my $data = retrieve($file);
+  $data->{"packstatus"}{"dbus"} = "disabled";
+  store($data, $file);
+'

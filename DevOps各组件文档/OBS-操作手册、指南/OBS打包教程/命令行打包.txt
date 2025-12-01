@@ -1,0 +1,148 @@
+1、安装OSC并设置本地项目
+
+更新软件源
+sudo zypper refresh
+
+更新包
+sudo zypper update
+
+
+安装osc 包
+zypper install osc
+
+创建一个工作目录
+sudo mkdir test_RPM
+
+进入该目录
+cd test_RPM/
+
+查看项目(第一次登录官方的服务器，会生成配置文件，再改成本地server地址)
+sudo osc checkout home:zhangdi					#home:zhangdi为project名，zhangdi对应的username,下同
+按提示输入用户名及密码
+Your user account / password are not configured yet.
+You will be asked for them below, and they will be stored in
+/home/master/.config/osc/oscrc for future use.
+
+Creating osc configuration file /home/master/.config/osc/oscrc ...
+Username [api.opensuse.org]: zhangdi
+Password [zhangdi@api.opensuse.org]:
+
+选择密码保存方式，建议选择“Transient”每次重输，选择1会有报错.
+NUM NAME              DESCRIPTION
+1   KWallet           Store password in KWallet [secure, persistent]
+2   Transient         Do not store the password and always ask for it [secure, in-memory]
+3   Obfuscated config Store the password in obfuscated form in the osc config file [insecure, persistent]
+4   Config            Store the password in plain text in the osc config file [insecure, persistent]
+Select credentials manager [default=1]:
+
+进入
+cd home:zhangdi
+
+2、创建和上传包
+
+编辑标题和描述
+osc meta pkg -e home:zhangdi HelloHello	
+
+#在 <title> </title> 中间填写软件名字，如 hellolq 。
+#在 <description> </description> 中间填写软件描述，如 Test hellolq 。
+
+
+创建检出包
+sudo osc co home:zhangdi HelloHello 
+
+
+cd 进入包目录：
+master@leapfive:~/test_RPM/home:zhangdi> ls
+hello02  hello03  hello_test  home:zhangdi  test_osc
+master@leapfive:~/test_RPM/home:zhangdi> cd home\:zhangdi/
+master@leapfive:~/test_RPM/home:zhangdi/home:zhangdi> ls
+HelloHello
+master@leapfive:~/test_RPM/home:zhangdi/home:zhangdi> ls
+HelloHello
+master@leapfive:~/test_RPM/home:zhangdi/home:zhangdi> cd HelloHello/
+
+
+将文件（spec和 .tar.xz）复制到当前目录
+sudo cp -r ~/gitee-test/18.hellolq/* .
+sudo cp -r /home/zd/test/* .
+
+将文件添加到 OBS
+sudo osc add *
+
+提交
+sudo osc commit								#完成后会输出相应的结果信息
+
+#提示未指定日志，c继续。
+Log message not specified
+a)bort, c)ontinue, e)dit:
+
+3、选择构建目标
+
+如果使用管理员账户登录，可显示所有可用的分发列表
+osc dists
+
+##形式如下（节选）：
+distribution                       			   project                       				 reponame                  		 repository
+-------------------------------------------  ---------------------------------------  ---------------------------        ----------
+openSUSE Backports for SLE 15 SP2  openSUSE:Backports:SLE-15-SP2  SLE_15_SP2_Backports       standard
+openSUSE Backports for SLE 15 SP1  openSUSE:Backports:SLE-15-SP1  SLE_15_SP1_Backports       standard
+openSUSE Backports for SLE 12 SP5  openSUSE:Backports:SLE-12-SP5  SLE_12_SP5_Backports       standard
+openSUSE Backports for SLE 12 SP4  openSUSE:Backports:SLE-12-SP4  SLE_12_SP4_Backports       standard
+openSUSE Backports for SLE 12 SP3  openSUSE:Backports:SLE-12-SP3  SLE_12_SP3_Backports       standard
+openSUSE Backports for SLE 12 SP2  openSUSE:Backports:SLE-12-SP2  SLE_12_SP2_Backports       standard
+openSUSE Backports for SLE 12 SP1  openSUSE:Backports:SLE-12-SP1  SLE_12_SP1_Backports       standard
+
+
+获取存储库及架构：
+osc repositories openSUSE:Backports:SLE-15-SP1			#对应选择<project>列中的openSUSE:Backports:SLE-15-SP1
+
+
+打开项目元数据，将选定的存储库添加到项目中
+osc meta prj -e home:zhangdi
+osc meta prj -e open Euler:24.03
+编辑 XML 文件并添加存储库配置：
+<project name="home:zhangdi">
+  <title/>
+  <description/>
+  <person userid="zhangdi" role="maintainer"/>
+  <debuginfo>
+    <enable/>
+  </debuginfo>
+  <repository name="SLE_15_SP1_Backports">
+    <path project="openSUSE:Backports:SLE-15-SP1" repository="standard"/>
+    <arch>x86_64</arch>
+  </repository>
+</project>
+
+
+查看打包结果（需等待一会）
+osc results
+
+4、本地构建
+进入工作目录
+cd  test_RPM/
+sudo osc co home:zd test03									 #项目名 包名
+osc build <platform> <arch> <specfile> [--clean|--noinit]			#<platform>为目标平台， <arch>为架构， <specfile>为spec文件名
+例如：
+sudo osc build SLE_15_SP1_Backports x86_64 hellolq.spec
+
+#提示是否信任，选择信任，并会自动从OBS服务器下载依赖的源软件包，成功后会生成相应的RPM文件。
+#140个被下载到/var/tmp/build-root/SLE_15_SP1_Backports-x86_64/installed-pkg。
+zd@obsworker01-OpenSuse15:/var/tmp/build-root/SLE_15_SP1_Backports-x86_64/installed-pkg> ls -l /var/tmp/build-root/SLE_15_SP1_Backports-x86_64/installed-pkg | grep ^- | wc -l
+140
+
+
+/var/tmp/build-root/SLE_15_SP1_Backports-x86_64/home/abuild/rpmbuild/SRPMS/hellolq-1.0-1.src.rpm
+/var/tmp/build-root/SLE_15_SP1_Backports-x86_64/home/abuild/rpmbuild/RPMS/x86_64/hellolq-1.0-1.x86_64.rpm				#此文件即为可运行的包
+/var/tmp/build-root/SLE_15_SP1_Backports-x86_64/home/abuild/rpmbuild/RPMS/x86_64/hellolq-debugsource-1.0-1.x86_64.rpm
+/var/tmp/build-root/SLE_15_SP1_Backports-x86_64/home/abuild/rpmbuild/RPMS/x86_64/hellolq-debuginfo-1.0-1.x86_64.rpm
+
+也可输入osc results查看是否成功
+zd@obsworker01-OpenSuse15:~/test_RPM/home:zd/test03> osc results
+SLE_15_SP1_Backports x86_64     test03                         succeeded
+
+
+
+5、其他命令
+删除包（web没有按钮，光在工作目录中删除没有用）
+osc deletepac home:<username> <package name>
